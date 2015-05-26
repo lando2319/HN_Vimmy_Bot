@@ -30,6 +30,8 @@ function fetchTopStories() {
 
         if (!error && response.statusCode === 200) {
             compileTop30Stories(body)
+        } else {
+            console.log(error)
         }
     })
 }
@@ -48,7 +50,10 @@ function fetchStory(storyID) {
 
         if (!error && response.statusCode === 200) {
             vimChecker(body)
+        } else {
+            console.log(error)
         }
+
     })
 }
 
@@ -58,4 +63,3 @@ function vimChecker(storyActual) {
         tweet(wholeTweet)
     }
 }
-
