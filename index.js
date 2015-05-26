@@ -3,7 +3,7 @@ var Twitter = require("twitter")
 var twitterCreds = require("./twitterCreds.js")
 var CronJob = require('cron').CronJob;
 
-new CronJob('* * * * ', function() {
+new CronJob('0 * * * * ', function() {
     console.log("I'm fetching")
     fetchTopStories()
 }, null, true, 'America/Chicago');
