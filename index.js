@@ -77,8 +77,8 @@ function fetchStory(storyID) {
 }
 
 function vimChecker(storyActual) {
-    // if (storyActual.title.match(/vim/gi)) {
-    if (storyActual.title.match(/Jerk/gi)) {
+    if (storyActual.title.match(/vim/gi)) {
+    // if (storyActual.title.match(/Jerk/gi)) {
         var wholeTweet = storyActual.title + " " + storyActual.url
         tweet(wholeTweet)
     }
