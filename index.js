@@ -1,6 +1,5 @@
 var request = require("request")
 var Twitter = require("twitter")
-var twitterCreds = require("./twitterCreds.js")
 var CronJob = require('cron').CronJob;
 var express = require("express")
 var app = express()
@@ -18,10 +17,10 @@ app.get('/', function(req, res) {
 });
 
 var client = new Twitter({
-  consumer_key: twitterCreds.consumer_key,
-  consumer_secret: twitterCreds.consumer_secret,
-  access_token_key: twitterCreds.access_token_key,
-  access_token_secret: twitterCreds.access_token_secret
+  consumer_key: process.env.consumer_key,
+  consumer_secret: process.env.consumer_secret,
+  access_token_key: process.env.access_token_key,
+  access_token_secret: process.env.access_token_secret
 });
 
 function tweet(tweetActual) {
