@@ -1,7 +1,7 @@
 Hi, I'm HN Vimmy Bot
 ====================
 Every hour I check the top 30 stories on Hacker News.
-I look at the story to see if it's about VIM, when I find a VIM story I tweet it to all my fans.
+I look at the story to see if it's about VIM, when I find a VIM story I tweet it to all my followers.
 
 Do you like VIM? Do you like Hacker News?
 
