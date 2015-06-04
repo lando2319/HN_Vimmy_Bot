@@ -1,21 +1,21 @@
 var request = require("request")
-var Twitter = require("twitter")
 var twitterCreds = require("./twitterCreds.js")
+var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
 var express = require("express")
-var app = express()
+// var app = express()
 
-var lastFetches = []
+var lastFetches = [9655252]
 
 new CronJob('0 * * * * ', function() {
     console.log("I'm fetching")
-    addToArrayOfFetches(new Date())
+    // addToArrayOfFetches(new Date())
     fetchTopStories()
 }, null, true, 'America/Chicago');
 
-app.get('/', function(req, res) {
-    res.send(lastFetches);
-});
+// app.get('/', function(req, res) {
+//     res.send(lastFetches);
+// });
 
 var client = new Twitter({
     consumer_key: twitterCreds.consumer_key,
@@ -32,14 +32,14 @@ function tweet(tweetActual) {
     });
 }
 
-function addToArrayOfFetches(fetchActual) {
-    if (fetchActual.count == 10) {
-        delete fetchActual[0]
-        lastFetches.push(fetchActual)
-    } else {
-        lastFetches.push(fetchActual)
-    }
-}
+// function addToArrayOfFetches(fetchActual) {
+//     if (fetchActual.count == 10) {
+//         delete fetchActual[0]
+//         lastFetches.push(fetchActual)
+//     } else {
+//         lastFetches.push(fetchActual)
+//     }
+// }
 
 function fetchTopStories() {
     request({
@@ -77,11 +77,25 @@ function fetchStory(storyID) {
 }
 
 function vimChecker(storyActual) {
-    if (storyActual.title.match(/vim/gi)) {
+    if (storyActual.title.match(/React/gi)) {
     // if (storyActual.title.match(/Jerk/gi)) {
         var wholeTweet = storyActual.title + " " + storyActual.url
-        tweet(wholeTweet)
+        // checkForRepeats(storyActual.id, wholeTweet)
     }
 }
 
-app.listen(3000);
+function checkForRepeats(storyID, wholeTweet) {
+    // THis isn't working it's suppose to check for repeats
+    for (i = 0; i < lastFetches.length; i++) { 
+        if (lastFetches[i] == storyID) {
+            break
+        }
+    }
+    lastFetches.push(storyID)
+    tweet(wholeTweet)
+    // console.log(lastFetches)
+    // console.log("pseudo tweet")
+}
+
+fetchTopStories()
+// app.listen(3000);
