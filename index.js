@@ -81,6 +81,7 @@ function vimChecker(storyActual) {
     // if (storyActual.title.match(/Jerk/gi)) {
         var wholeTweet = storyActual.title + " " + storyActual.url
         // checkForRepeats(storyActual.id, wholeTweet)
+        tweet(wholeTweet)
     }
 }
 
