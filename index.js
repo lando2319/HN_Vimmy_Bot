@@ -2,20 +2,11 @@ var request = require("request")
 var twitterCreds = require("./twitterCreds.js")
 var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
-var express = require("express")
-// var app = express()
-
-var lastFetches = [9655252]
 
 new CronJob('0 * * * * ', function() {
     console.log("I'm fetching")
-    // addToArrayOfFetches(new Date())
     fetchTopStories()
 }, null, true, 'America/Chicago');
-
-// app.get('/', function(req, res) {
-//     res.send(lastFetches);
-// });
 
 var client = new Twitter({
     consumer_key: twitterCreds.consumer_key,
@@ -25,21 +16,12 @@ var client = new Twitter({
 });
 
 function tweet(tweetActual) {
+    console.log("here I am I am RIGHT here")
     client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
-        if(error) throw error;
+        console.log(error)
         console.log("I just Tweeted");
-        addToArrayOfFetches("I just Tweeted")
     });
 }
-
-// function addToArrayOfFetches(fetchActual) {
-//     if (fetchActual.count == 10) {
-//         delete fetchActual[0]
-//         lastFetches.push(fetchActual)
-//     } else {
-//         lastFetches.push(fetchActual)
-//     }
-// }
 
 function fetchTopStories() {
     request({
@@ -77,25 +59,11 @@ function fetchStory(storyID) {
 }
 
 function vimChecker(storyActual) {
-    if (storyActual.title.match(/React/gi)) {
+    if (storyActual.title.match(/vim/gi)) {
     // if (storyActual.title.match(/Jerk/gi)) {
         var wholeTweet = storyActual.title + " " + storyActual.url
-        // checkForRepeats(storyActual.id, wholeTweet)
         tweet(wholeTweet)
     }
-}
-
-function checkForRepeats(storyID, wholeTweet) {
-    // THis isn't working it's suppose to check for repeats
-    for (i = 0; i < lastFetches.length; i++) { 
-        if (lastFetches[i] == storyID) {
-            break
-        }
-    }
-    lastFetches.push(storyID)
-    tweet(wholeTweet)
-    // console.log(lastFetches)
-    // console.log("pseudo tweet")
 }
 
 fetchTopStories()
