@@ -1,21 +1,12 @@
 var request = require("request")
-var Twitter = require("twitter")
 var twitterCreds = require("./twitterCreds.js")
+var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
-var express = require("express")
-var app = express()
-
-var lastFetches = []
 
 new CronJob('0 * * * * ', function() {
     console.log("I'm fetching")
-    addToArrayOfFetches(new Date())
     fetchTopStories()
 }, null, true, 'America/Chicago');
-
-app.get('/', function(req, res) {
-    res.send(lastFetches);
-});
 
 var client = new Twitter({
     consumer_key: twitterCreds.consumer_key,
@@ -25,20 +16,11 @@ var client = new Twitter({
 });
 
 function tweet(tweetActual) {
+    console.log("here I am I am RIGHT here")
     client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
-        if(error) throw error;
+        console.log(error)
         console.log("I just Tweeted");
-        addToArrayOfFetches("I just Tweeted")
     });
-}
-
-function addToArrayOfFetches(fetchActual) {
-    if (fetchActual.count == 10) {
-        delete fetchActual[0]
-        lastFetches.push(fetchActual)
-    } else {
-        lastFetches.push(fetchActual)
-    }
 }
 
 function fetchTopStories() {
@@ -84,4 +66,5 @@ function vimChecker(storyActual) {
     }
 }
 
-app.listen(3000);
+fetchTopStories()
+// app.listen(3000);
