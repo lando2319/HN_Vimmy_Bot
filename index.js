@@ -4,7 +4,15 @@ var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
 
 new CronJob('0 * * * * ', function() {
-    console.log("I'm fetching")
+    var currentdate = new Date(); 
+    var datetime = "HN_Vimmy_Bot running Scan: " + currentdate.getDate() + "/"
+                    + (currentdate.getMonth()+1)  + "/" 
+                    + currentdate.getFullYear() + " @ "  
+                    + currentdate.getHours() + ":"  
+                    + currentdate.getMinutes() + ":" 
+                    + currentdate.getSeconds();
+
+    consol.log(datetime)
     fetchTopStories()
 }, null, true, 'America/Chicago');
 
@@ -16,7 +24,6 @@ var client = new Twitter({
 });
 
 function tweet(tweetActual) {
-    console.log("here I am I am RIGHT here")
     client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
         console.log(error)
         console.log("I just Tweeted");
