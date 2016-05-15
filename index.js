@@ -12,7 +12,7 @@ new CronJob('0 * * * * ', function() {
                     + currentdate.getMinutes() + ":" 
                     + currentdate.getSeconds();
 
-    consol.log(datetime)
+    console.log(datetime)
     fetchTopStories()
 }, null, true, 'America/Chicago');
 
