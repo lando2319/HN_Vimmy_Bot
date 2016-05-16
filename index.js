@@ -18,10 +18,10 @@ new CronJob('0 * * * * ', function() {
 }, null, true, 'America/Chicago');
 
 var client = new Twitter({
-    consumer_key: process.env.hn_vimmy_bot_twitter_consumer_key,
-    consumer_secret: process.env.hn_vimmy_bot_twitter_consumer_secret,
-    access_token_key: process.env.hn_vimmy_bot_twitter_access_token_key,
-    access_token_secret: process.env.hn_vimmy_bot_twitter_access_token_secret
+    consumer_key: process.env.twitter_consumer_key,
+    consumer_secret: process.env.twitter_consumer_secret,
+    access_token_key: process.env.twitter_access_token_key,
+    access_token_secret: process.env.twitter_access_token_secret
 });
 
 function serveLogActual() {
