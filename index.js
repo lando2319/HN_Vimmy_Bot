@@ -2,6 +2,23 @@ var request = require("request")
 var twitterCreds = require("./twitterCreds.js")
 var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
+var googl = require('goo.gl');
+
+// Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
+googl.setKey(twitterCreds.googleLinkShortenerAPI);
+
+// Get currently set developer key
+googl.getKey();
+
+// Shorten a long url and output the result
+googl.shorten('http://www.mikepland.com/apps')
+    .then(function (shortUrl) {
+        console.log("shorty is");
+        console.log(shortUrl);
+    })
+    .catch(function (err) {
+        console.error(err.message);
+    });
 
 new CronJob('0 * * * * ', function() {
     fetchTopStories()
