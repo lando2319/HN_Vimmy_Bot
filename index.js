@@ -1,34 +1,27 @@
+// HN VImmy Bot
+// Mike P Land
+// Every Hour Scans Hacker News For Stories on Vim and Tweets Them, see mikepland.com/hn_vimmy_bot
+
 var request = require("request")
-var twitterCreds = require("./twitterCreds.js")
 var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
 var googl = require('goo.gl');
 
 // Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
-googl.setKey(twitterCreds.googleLinkShortenerAPI);
+googl.setKey(process.env.hn_vimmy_bot_google_api_key);
 
 // Get currently set developer key
 googl.getKey();
-
-// Shorten a long url and output the result
-googl.shorten('http://www.mikepland.com/apps')
-    .then(function (shortUrl) {
-        console.log("shorty is");
-        console.log(shortUrl);
-    })
-    .catch(function (err) {
-        console.error(err.message);
-    });
 
 new CronJob('0 * * * * ', function() {
     fetchTopStories()
 }, null, true, 'America/Chicago');
 
 var client = new Twitter({
-    consumer_key: twitterCreds.consumer_key,
-    consumer_secret: twitterCreds.consumer_secret,
-    access_token_key: twitterCreds.access_token_key,
-    access_token_secret: twitterCreds.access_token_secret
+    consumer_key: process.env.hn_vimmy_bot_twitter_consumer_key,
+    consumer_secret: process.env.hn_vimmy_bot_twitter_consumer_secret,
+    access_token_key: process.env.hn_vimmy_bot_twitter_access_token_key,
+    access_token_secret: process.env.hn_vimmy_bot_twitter_access_token_secret
 });
 
 function serveLogActual() {
@@ -40,9 +33,8 @@ function serveLogActual() {
 function tweet(tweetActual) {
     client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
         if (!error && response.statusCode === 200) {
-            console.log("I just Tweeted");
+            console.log("Just Tweeted");
         } else if (error) {
-            // console.log("Is this going to call??");
             console.log(error);
         }
     });
@@ -82,11 +74,42 @@ function fetchStory(storyID) {
 }
 
 function vimChecker(storyActual) {
+    // check title for stories with "vim" in the title
     if (storyActual.title.match(/vim/gi)) {
-        var wholeTweet = storyActual.title + " " + storyActual.url
-        tweet(wholeTweet)
+        // Link for HN Discussion Link
+        var hnLink = "";
+
+        // shorten HN Link
+        googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
+            .then(function (shortUrl) {
+                hnLink = shortUrl;
+
+                // Shorten Story Link
+                shortenStoryLink(storyActual, hnLink);
+            })
+        .catch(function (err) {
+            console.log("Hacker New Link Error: " + err.message);
+        });
     }
 }
+
+function shortenStoryLink(storyActual, hnLink) {
+    // Link for Story
+    var storyLink = "";
+    googl.shorten(storyActual.url)
+        .then(function (shortUrl) {
+            storyLink = shortUrl;
+
+            var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\nStory Link: " + storyLink + "\n#vim"
+
+            // Tweet Story
+            tweet(wholeTweet)
+        })
+    .catch(function (err) {
+        console.error("Story Link Error: " + err.message);
+    });
+}
+
 
 fetchTopStories()
 // app.listen(3000);
