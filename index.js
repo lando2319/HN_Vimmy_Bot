@@ -76,7 +76,6 @@ function fetchStory(storyID) {
 function vimChecker(storyActual) {
     // check title for stories with "vim" in the title
     if (storyActual.title.match(/vim/gi)) {
-
         // shorten HN Link
         googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
             .then(function (shortUrl) {
@@ -90,8 +89,6 @@ function vimChecker(storyActual) {
 }
 
 function shortenStoryLink(storyActual, hnLink) {
-    // Link for Story
-
     // check to see if post is "Ask HN:" and thus no story link
     if (storyActual.url == undefined) {
         var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\n#vim"
