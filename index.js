@@ -76,16 +76,12 @@ function fetchStory(storyID) {
 function vimChecker(storyActual) {
     // check title for stories with "vim" in the title
     if (storyActual.title.match(/vim/gi)) {
-        // Link for HN Discussion Link
-        var hnLink = "";
 
         // shorten HN Link
         googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
             .then(function (shortUrl) {
-                hnLink = shortUrl;
-
                 // Shorten Story Link
-                shortenStoryLink(storyActual, hnLink);
+                shortenStoryLink(storyActual, shortUrl);
             })
         .catch(function (err) {
             console.log("Hacker New Link Error: " + err.message);
@@ -95,19 +91,25 @@ function vimChecker(storyActual) {
 
 function shortenStoryLink(storyActual, hnLink) {
     // Link for Story
-    var storyLink = "";
-    googl.shorten(storyActual.url)
-        .then(function (shortUrl) {
-            storyLink = shortUrl;
 
-            var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\nStory Link: " + storyLink + "\n#vim"
+    // check to see if post is "Ask HN:" and thus no story link
+    if (storyActual.url == undefined) {
+        var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\n#vim"
 
-            // Tweet Story
-            tweet(wholeTweet)
-        })
-    .catch(function (err) {
-        console.error("Story Link Error: " + err.message);
-    });
+        // Tweet Story
+        tweet(wholeTweet)
+    } else {
+        googl.shorten(storyActual.url)
+            .then(function (shortUrl) {
+                var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\nStory Link: " + shortUrl + "\n#vim"
+
+                // Tweet Story
+                tweet(wholeTweet)
+            })
+        .catch(function (err) {
+            console.error("Story Link Error: " + err.message);
+        });
+    }
 }
 
 
