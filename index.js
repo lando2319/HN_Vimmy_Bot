@@ -51,7 +51,8 @@ function fetchTopStories() {
         if (!error && response.statusCode === 200) {
             compileTop30Stories(body)
         } else {
-            console.log(error)
+            console.log(error);
+            sendDMErrorMessage(error);
         }
     })
 }
@@ -70,7 +71,8 @@ function fetchStory(storyID) {
         if (!error && response.statusCode === 200) {
             vimChecker(body)
         } else {
-            console.log(error)
+            console.log(error);
+            sendDMErrorMessage(error);
         }
     })
 }
@@ -89,6 +91,7 @@ function vimChecker(storyActual) {
             })
         .catch(function (err) {
             console.log("Hacker New Link Error: " + err.message);
+            sendDMErrorMessage(err.message);
         });
     }
 }
@@ -110,10 +113,19 @@ function shortenStoryLink(storyActual, hnLink) {
             })
         .catch(function (err) {
             console.error("Story Link Error: " + err.message);
+            sendDMErrorMessage(error);
         });
     }
 }
 
+function sendDMErrorMessage(errorActual) {
+    client.post('direct_messages/new', {text: errorActual, screen_name:"mikepland"},  function(error, tweet, response){
+        if (!error && response.statusCode === 200) {
+            console.log("Just DMed an Error Message");
+        } else if (error) {
+            console.log(error);
+        }
+    });
+}
 
 fetchTopStories()
-// app.listen(3000);
