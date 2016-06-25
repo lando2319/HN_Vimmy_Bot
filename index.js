@@ -7,11 +7,13 @@ var Twitter = require("twitter")
 var CronJob = require('cron').CronJob;
 var googl = require('goo.gl');
 
-// Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
-googl.setKey(process.env.hn_vimmy_bot_google_api_key);
+function getAndSetAPIKey() {
+    // Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
+    googl.setKey(process.env.hn_vimmy_bot_google_api_key);
 
-// Get currently set developer key
-googl.getKey();
+    // Get currently set developer key
+    googl.getKey();
+}
 
 new CronJob('0 * * * * ', function() {
     fetchTopStories()
@@ -76,6 +78,9 @@ function fetchStory(storyID) {
 function vimChecker(storyActual) {
     // check title for stories with "vim" in the title
     if (storyActual.title.match(/vim/gi)) {
+        // get and set Google API key for link shortening
+        getAndSetAPIKey();
+
         // shorten HN Link
         googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
             .then(function (shortUrl) {
