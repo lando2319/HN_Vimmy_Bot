@@ -51,7 +51,7 @@ function fetchTopStories() {
         if (!error && response.statusCode === 200) {
             compileTop30Stories(body)
         } else {
-            console.log(error);
+            console.log("Error on fetchTopStories" + error);
             sendDMErrorMessage(error);
         }
     })
@@ -71,7 +71,7 @@ function fetchStory(storyID) {
         if (!error && response.statusCode === 200) {
             vimChecker(body)
         } else {
-            console.log(error);
+            console.log("Error in fetchStory" + error);
             sendDMErrorMessage(error);
         }
     })
