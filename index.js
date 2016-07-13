@@ -21,22 +21,6 @@ var client = new Twitter({
     access_token_secret: process.env.twitter_access_token_secret
 });
 
-function serveLogActual() {
-    var offset = -5;
-    var currentDateActual = new Date( new Date().getTime() + offset * 3600 * 1000).toUTCString().replace( / GMT$/, "" );
-    console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
-}
-
-function tweet(tweetActual) {
-    client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
-        if (!error && response.statusCode === 200) {
-            console.log("Just Tweeted");
-        } else if (error) {
-            console.log(error);
-        }
-    });
-}
-
 function fetchTopStories() {
     request({
         url: "https://hacker-news.firebaseio.com/v0/topstories.json",
@@ -52,16 +36,23 @@ function fetchTopStories() {
     })
 }
 
+function serveLogActual() {
+    var offset = -5;
+    var currentDateActual = new Date( new Date().getTime() + offset * 3600 * 1000).toUTCString().replace( / GMT$/, "" );
+    console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
+}
+
 function compileTop30Stories(groupOfStories) {
     var storyFound = false;
     for (i = 0; i < 30; i++) {
+        // fetch actual story to check it's title
         request({
             url: "https://hacker-news.firebaseio.com/v0/item/" + i + ".json",
             json: true
         }, function (error, response, body) {
             if (!error && response.statusCode === 200) {
                 vimChecker(body);
-                storyFound = true
+                storyFound = true;
             } else {
                 console.log("Error in fetchStory" + error);
                 sendDMErrorMessage(error);
@@ -71,11 +62,8 @@ function compileTop30Stories(groupOfStories) {
 
     // end process if no vim stories were discovered
     if (!storyFound) {
-        process.exit("No Vim Stories")
+        process.exit()
     }
-}
-
-function fetchStory(storyID) {
 }
 
 function vimChecker(storyActual) {
@@ -119,6 +107,16 @@ function shortenStoryLink(storyActual, hnLink) {
     }
 }
 
+function tweet(tweetActual) {
+    client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
+        if (!error && response.statusCode === 200) {
+            console.log("Just Tweeted");
+        } else if (error) {
+            console.log(error);
+        }
+    });
+}
+
 function sendDMErrorMessage(errorActual) {
     client.post('direct_messages/new', {text: errorActual, screen_name:"mikepland"},  function(error, tweet, response){
         if (!error && response.statusCode === 200) {
@@ -129,5 +127,5 @@ function sendDMErrorMessage(errorActual) {
     });
 }
 
-// start
+// start script
 fetchTopStories();
