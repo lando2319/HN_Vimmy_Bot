@@ -4,7 +4,6 @@
 
 var request = require("request")
 var Twitter = require("twitter")
-var CronJob = require('cron').CronJob;
 var googl = require('goo.gl');
 
 function getAndSetAPIKey() {
@@ -14,10 +13,6 @@ function getAndSetAPIKey() {
     // Get currently set developer key
     googl.getKey();
 }
-
-new CronJob('0 * * * * ', function() {
-    fetchTopStories()
-}, null, true, 'America/Chicago');
 
 var client = new Twitter({
     consumer_key: process.env.twitter_consumer_key,
@@ -44,7 +39,7 @@ function tweet(tweetActual) {
 
 function fetchTopStories() {
     request({
-        url: "https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty",
+        url: "https://hacker-news.firebaseio.com/v0/topstories.json",
     json: true
     }, function (error, response, body) {
         serveLogActual();
@@ -58,23 +53,29 @@ function fetchTopStories() {
 }
 
 function compileTop30Stories(groupOfStories) {
+    var storyFound = false;
     for (i = 0; i < 30; i++) {
-        fetchStory(groupOfStories[i])
+        request({
+            url: "https://hacker-news.firebaseio.com/v0/item/" + i + ".json",
+            json: true
+        }, function (error, response, body) {
+            if (!error && response.statusCode === 200) {
+                vimChecker(body);
+                storyFound = true
+            } else {
+                console.log("Error in fetchStory" + error);
+                sendDMErrorMessage(error);
+            }
+        })
     }    
+
+    // end process if no vim stories were discovered
+    if (!storyFound) {
+        process.exit("No Vim Stories")
+    }
 }
 
 function fetchStory(storyID) {
-    request({
-        url: "https://hacker-news.firebaseio.com/v0/item/" + storyID + ".json?print=pretty",
-    json: true
-    }, function (error, response, body) {
-        if (!error && response.statusCode === 200) {
-            vimChecker(body)
-        } else {
-            console.log("Error in fetchStory" + error);
-            sendDMErrorMessage(error);
-        }
-    })
 }
 
 function vimChecker(storyActual) {
@@ -128,4 +129,5 @@ function sendDMErrorMessage(errorActual) {
     });
 }
 
-fetchTopStories()
+// start
+fetchTopStories();
