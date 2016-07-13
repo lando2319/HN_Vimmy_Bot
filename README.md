@@ -1,4 +1,4 @@
-![HN Vimmy Bot Actual](assets/hn_vimmy_bot_actual.png)
+![HN Vimmy Bot Actual](/assets/hn_vimmy_bot_actual.png)
 # HN VIMMY BOT
 
 ## Hi, I'm HN Vimmy Bot
