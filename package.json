@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.0.0",
     "cron": "^1.0.9",
     "express": "^4.12.4",
     "modulus": "^3.9.0",

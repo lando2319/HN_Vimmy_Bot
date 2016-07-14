@@ -5,6 +5,7 @@
 var request = require("request")
 var Twitter = require("twitter")
 var googl = require('goo.gl');
+var async = require('async');
 
 function getAndSetAPIKey() {
     // Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
@@ -20,6 +21,26 @@ var client = new Twitter({
     access_token_key: process.env.twitter_access_token_key,
     access_token_secret: process.env.twitter_access_token_secret
 });
+
+var q = async.queue(function (task, done) {
+    request(task.url, function(err, res, body) {
+        if (err) {
+            console.log("Error in fetchStory" + err);
+            sendDMErrorMessage(err);
+            return done(err);
+        }
+        if (res.statusCode != 200) {
+            console.log("Error in fetchStory" + err);
+            sendDMErrorMessage(err);
+            return done(res.statusCode);
+        } else {
+            // check if story is about VIM
+            vimChecker(body);
+        }
+
+        done();
+    });
+}, 1);
 
 function fetchTopStories() {
     request({
@@ -43,46 +64,37 @@ function serveLogActual() {
 }
 
 function compileTop30Stories(groupOfStories) {
-    var storyFound = false;
     for (i = 0; i < 30; i++) {
         // fetch actual story to check it's title
-        request({
-            url: "https://hacker-news.firebaseio.com/v0/item/" + i + ".json",
-            json: true
-        }, function (error, response, body) {
-            if (!error && response.statusCode === 200) {
-                vimChecker(body);
-                storyFound = true;
-            } else {
-                console.log("Error in fetchStory" + error);
-                sendDMErrorMessage(error);
-            }
-        })
+        q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
     }    
-
-    // end process if no vim stories were discovered
-    if (!storyFound) {
-        process.exit()
-    }
 }
 
 function vimChecker(storyActual) {
     // check title for stories with "vim" in the title
-    if (storyActual.title.match(/vim/gi)) {
-        // get and set Google API key for link shortening
-        getAndSetAPIKey();
 
-        // shorten HN Link
-        googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
-            .then(function (shortUrl) {
-                // Shorten Story Link
-                shortenStoryLink(storyActual, shortUrl);
-            })
-        .catch(function (err) {
-            console.log("Hacker New Link Error: " + err.message);
-            sendDMErrorMessage(err.message);
-        });
-    }
+    console.log(storyActual.title)
+
+
+
+
+//    if (storyActual.title.match(/vim/gi)) {
+//        // get and set Google API key for link shortening
+//        getAndSetAPIKey();
+//
+//        // shorten HN Link
+//        googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
+//            .then(function (shortUrl) {
+//                // Shorten Story Link
+//                shortenStoryLink(storyActual, shortUrl);
+//            })
+//        .catch(function (err) {
+//            console.log("Hacker New Link Error: " + err.message);
+//            sendDMErrorMessage(err.message);
+//        });
+//    } else {
+//        console.log("no match for " + storyActual.title)
+//    }
 }
 
 function shortenStoryLink(storyActual, hnLink) {
