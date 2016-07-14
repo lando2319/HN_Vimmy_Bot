@@ -52,7 +52,7 @@ function fetchTopStories() {
     }, function (error, response, body) {
         serveLogActual();
         if (!error && response.statusCode === 200) {
-            compileTop30Stories(body)
+            compileTopStories(body)
         } else {
             console.log("Error on fetchTopStories" + error);
             sendDMErrorMessage(error);
@@ -67,9 +67,12 @@ function serveLogActual() {
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
-// Grab top 30 stories
-function compileTop30Stories(groupOfStories) {
-    for (i = 0; i < 30; i++) {
+// Grab top stories
+function compileTopStories(groupOfStories) {
+    // total number of stories <= 500 (max api will serve)
+    var numberOfStories = Object.keys(groupOfStories).length;
+
+    for (i = 0; i < numberOfStories; i++) {
         // fetch actual story to check it's title
         q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
     }    
