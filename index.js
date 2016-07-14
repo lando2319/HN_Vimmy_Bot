@@ -22,6 +22,7 @@ var client = new Twitter({
     access_token_secret: process.env.twitter_access_token_secret
 });
 
+// Async makes sure to keep callback straight
 var q = async.queue(function (task, done) {
     request(task.url, function(err, res, body) {
         if (err) {
@@ -42,6 +43,7 @@ var q = async.queue(function (task, done) {
     });
 }, 1);
 
+// Grab top 500 stories
 function fetchTopStories() {
     request({
         url: "https://hacker-news.firebaseio.com/v0/topstories.json",
@@ -57,12 +59,14 @@ function fetchTopStories() {
     })
 }
 
+// Log time
 function serveLogActual() {
     var offset = -5;
     var currentDateActual = new Date( new Date().getTime() + offset * 3600 * 1000).toUTCString().replace( / GMT$/, "" );
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
+// Grab top 30 stories
 function compileTop30Stories(groupOfStories) {
     for (i = 0; i < 30; i++) {
         // fetch actual story to check it's title
@@ -70,31 +74,28 @@ function compileTop30Stories(groupOfStories) {
     }    
 }
 
+// Check to see if it's a VIM story
 function vimChecker(storyActual) {
+    // get JSON Parsed version
+    var storyActualJSON = JSON.parse(storyActual)
+
     // check title for stories with "vim" in the title
+    if (storyActualJSON.title.match(/vim/gi)) {
+        // get and set Google API key for link shortening
+        getAndSetAPIKey();
 
-    console.log(storyActual.title)
-
-
-
-
-//    if (storyActual.title.match(/vim/gi)) {
-//        // get and set Google API key for link shortening
-//        getAndSetAPIKey();
-//
-//        // shorten HN Link
-//        googl.shorten('https://news.ycombinator.com/item?id=' + storyActual.id)
-//            .then(function (shortUrl) {
-//                // Shorten Story Link
-//                shortenStoryLink(storyActual, shortUrl);
-//            })
-//        .catch(function (err) {
-//            console.log("Hacker New Link Error: " + err.message);
-//            sendDMErrorMessage(err.message);
-//        });
-//    } else {
-//        console.log("no match for " + storyActual.title)
-//    }
+        // shorten HN Link
+        googl.shorten('https://news.ycombinator.com/item?id=' + storyActualJSON.id)
+            .then(function (shortUrl) {
+                // Shorten Story Link
+                shortenStoryLink(storyActualJSON, shortUrl);
+            })
+        .catch(function (err) {
+            console.log("Hacker New Link Error: " + err.message);
+        });
+    } else {
+        // console.log("no match for " + storyActualJSON.title)
+    }
 }
 
 function shortenStoryLink(storyActual, hnLink) {
