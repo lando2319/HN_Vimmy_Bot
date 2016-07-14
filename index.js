@@ -1,6 +1,7 @@
 // HN VImmy Bot
 // Mike P Land
 // Every Hour Scans Hacker News For Stories on Vim and Tweets Them, see mikepland.com/hn_vimmy_bot
+// Script is being run with Crontab, ($ crontab -e)
 
 var request = require("request")
 var Twitter = require("twitter")
