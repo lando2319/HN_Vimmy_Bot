@@ -29,12 +29,10 @@ var q = async.queue(function (task, done) {
     request(task.url, function(err, res, body) {
         if (err) {
             console.log("Error in fetchStory" + err);
-            sendDMErrorMessage(err);
             return done(err);
         }
         if (res.statusCode != 200) {
             console.log("Error in fetchStory" + err);
-            sendDMErrorMessage(err);
             return done(res.statusCode);
         } else {
             // check if story is about VIM
