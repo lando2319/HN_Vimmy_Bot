@@ -8,6 +8,9 @@ var Twitter = require("twitter")
 var googl = require('goo.gl');
 var async = require('async');
 
+var chatEmoji = '💬';
+var linkEmoji = '🔗';
+
 // Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
 googl.setKey(process.env.hn_vimmy_bot_google_api_key);
 
@@ -100,14 +103,14 @@ function vimChecker(storyActual) {
 function shortenStoryLink(storyActual, hnLink) {
     // check to see if post is "Ask HN:" and thus no story link
     if (storyActual.url == undefined) {
-        var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\n#vim"
+        var wholeTweet = storyActual.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews"
 
         // Tweet Story
         tweet(wholeTweet)
     } else {
         googl.shorten(storyActual.url)
             .then(function (shortUrl) {
-                var wholeTweet = storyActual.title + "\nHN Discussion: " + hnLink + "\nStory Link: " + shortUrl + "\n#vim"
+                var wholeTweet = storyActual.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #VIM"
 
                 // Tweet Story
                 tweet(wholeTweet)
