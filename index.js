@@ -101,7 +101,7 @@ function vimChecker(storyActual) {
 function shortenStoryLink(storyActual, hnLink) {
     // check to see if post is "Ask HN:" and thus no story link
     if (storyActual.url == undefined) {
-        var wholeTweet = storyActual.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews"
+        var wholeTweet = storyActual.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews #VIM"
 
         // Tweet Story
         tweet(wholeTweet)
