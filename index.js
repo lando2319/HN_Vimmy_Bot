@@ -7,6 +7,7 @@ var request = require("request")
 var Twitter = require("twitter")
 var googl = require('goo.gl');
 var async = require('async');
+var util = require('util');
 
 var chatEmoji = '💬';
 var linkEmoji = '🔗';
@@ -31,10 +32,10 @@ var q = async.queue(function (task, finalCallback) {
             function(mainCallback) {
                 request(task.url, function(err, res, body) {
                     if (err) {
-                        console.log("Error in fetchStory" + err);
+                        console.log(util.inspect("Error in fetchStory " + err, false, null));
                         finalCallback();
                     } else if (res.statusCode != 200) {
-                        console.log("Error in fetchStory" + res);
+                        console.log(util.inspect("Error in fetchStory response not 200 " + res.statusCode, false, null));
                         finalCallback();
                     } else {
                         mainCallback(null, body)
@@ -56,7 +57,7 @@ var q = async.queue(function (task, finalCallback) {
                             mainCallback(null, storyActualJSON, shortUrl);
                         })
                     .catch(function (err) {
-                        console.log("Hacker New Link Error: " + err.message);
+                        console.log(util.inspect("Hacker News Link Error: " + err, false, null));
                         finalCallback();
                     });
                 } else {
@@ -80,7 +81,7 @@ var q = async.queue(function (task, finalCallback) {
                             mainCallback(null, outgoingTweet)
                         })
                     .catch(function (err) {
-                        console.error("Story Link Error: " + err.message);
+                        console.log(util.inspect("Story Link Error: " + err, false, null));
                         // sendDMErrorMessage(error);
                         finalCallback();
                     });
@@ -93,7 +94,9 @@ var q = async.queue(function (task, finalCallback) {
                         console.log("Just Successfully Tweeted");
                         finalCallback();
                     } else if (error) {
-                        console.log(error);
+                        console.log(util.inspect("Tweet Error: " + error, false, null));
+                        finalCallback();
+                    } else {
                         finalCallback();
                     }
                 });
@@ -116,16 +119,15 @@ function fetchTopStories() {
                 q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
             }    
         } else {
-            console.log("Error on fetchTopStories" + error);
-            sendDMErrorMessage(error);
+            console.log(util.inspect("Error on fetchTopStories: " + error, false, null));
+            // sendDMErrorMessage(error);
         }
     })
 }
 
 // Log time
 function serveLogActual() {
-    var offset = -5;
-    var currentDateActual = new Date( new Date().getTime() + offset * 3600 * 1000).toUTCString().replace( / GMT$/, "" );
+    var currentDateActual = new Date()
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
