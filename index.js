@@ -25,22 +25,81 @@ var client = new Twitter({
 });
 
 // Async makes sure to keep callback straight
-var q = async.queue(function (task, done) {
-    request(task.url, function(err, res, body) {
-        if (err) {
-            console.log("Error in fetchStory" + err);
-            return done(err);
-        }
-        if (res.statusCode != 200) {
-            console.log("Error in fetchStory" + err);
-            return done(res.statusCode);
-        } else {
-            // check if story is about VIM
-            vimChecker(body);
-        }
+var q = async.queue(function (task, finalCallback) {
 
-        done();
-    });
+    async.waterfall([
+            function(mainCallback) {
+                request(task.url, function(err, res, body) {
+                    if (err) {
+                        console.log("Error in fetchStory" + err);
+                        finalCallback();
+                    } else if (res.statusCode != 200) {
+                        console.log("Error in fetchStory" + res);
+                        finalCallback();
+                    } else {
+                        mainCallback(null, body)
+                    }
+                });
+            },
+            function(body, mainCallback) {
+                var storyActualJSON = JSON.parse(body);
+
+                // check title for stories with "vim" in the title
+                if (storyActualJSON.title.match(/Salakhutdinov/gi)) {
+                // if (storyActualJSON.title.match(/vim/gi)) {
+                    // shorten HN Link
+                    console.log("Found story on VIM: " + storyActualJSON.title);
+                    console.log("Shortening HN Discussion Link");
+                    googl.shorten('https://news.ycombinator.com/item?id=' + storyActualJSON.id)
+                        .then(function (shortUrl) {
+                            // Shorten Story Link
+                            console.log("Link Successfully Shortened");
+                            mainCallback(null, storyActualJSON, shortUrl);
+                        })
+                    .catch(function (err) {
+                        console.log("Hacker New Link Error: " + err.message);
+                        finalCallback();
+                    });
+                } else {
+                    console.log("no match for " + storyActualJSON.title)
+                    finalCallback();
+                }
+
+            },
+            function(storyActualJSON, hnLink, mainCallback) {
+                console.log("Checking to see if story is \"ASK HN:\"");
+                // check to see if post is "Ask HN:" and thus no story link
+                if (storyActualJSON.url == undefined) {
+                    var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews #VIM";
+                    mainCallback(null, outgoingTweet);
+                } else {
+                    console.log("Shortening Story Link");
+                    googl.shorten(storyActualJSON.url)
+                        .then(function (shortUrl) {
+                            console.log("Successfully Shortened Story Link");
+                            var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #VIM";
+                            mainCallback(null, outgoingTweet)
+                        })
+                    .catch(function (err) {
+                        console.error("Story Link Error: " + err.message);
+                        // sendDMErrorMessage(error);
+                        finalCallback();
+                    });
+                }
+            },
+            function(outgoingTweet, mainCallback) {
+                console.error("Tweeting out Story");
+                client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
+                    if (!error && response.statusCode === 200) {
+                        console.log("Just Successfully Tweeted");
+                        finalCallback();
+                    } else if (error) {
+                        console.log(error);
+                        finalCallback();
+                    }
+                });
+            }
+            ]);
 }, 1);
 
 // Grab top 500 stories
@@ -48,10 +107,15 @@ function fetchTopStories() {
     request({
         url: "https://hacker-news.firebaseio.com/v0/topstories.json",
     json: true
-    }, function (error, response, body) {
+    }, function (error, response, groupOfStories) {
         serveLogActual();
         if (!error && response.statusCode === 200) {
-            compileTopStories(body)
+            var numberOfStories = Object.keys(groupOfStories).length;
+
+            for (i = 0; i < numberOfStories; i++) {
+                // fetch actual story to check it's title
+                q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
+            }    
         } else {
             console.log("Error on fetchTopStories" + error);
             sendDMErrorMessage(error);
@@ -64,70 +128,6 @@ function serveLogActual() {
     var offset = -5;
     var currentDateActual = new Date( new Date().getTime() + offset * 3600 * 1000).toUTCString().replace( / GMT$/, "" );
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
-}
-
-// Grab top stories
-function compileTopStories(groupOfStories) {
-    // total number of stories <= 500 (max api will serve)
-    var numberOfStories = Object.keys(groupOfStories).length;
-
-    for (i = 0; i < numberOfStories; i++) {
-        // fetch actual story to check it's title
-        q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
-    }    
-}
-
-// Check to see if it's a VIM story
-function vimChecker(storyActual) {
-    // get JSON Parsed version
-    var storyActualJSON = JSON.parse(storyActual)
-
-    // check title for stories with "vim" in the title
-    if (storyActualJSON.title.match(/vim/gi)) {
-        // shorten HN Link
-        googl.shorten('https://news.ycombinator.com/item?id=' + storyActualJSON.id)
-            .then(function (shortUrl) {
-                // Shorten Story Link
-                shortenStoryLink(storyActualJSON, shortUrl);
-            })
-        .catch(function (err) {
-            console.log("Hacker New Link Error: " + err.message);
-        });
-    } else {
-        // console.log("no match for " + storyActualJSON.title)
-    }
-}
-
-function shortenStoryLink(storyActual, hnLink) {
-    // check to see if post is "Ask HN:" and thus no story link
-    if (storyActual.url == undefined) {
-        var wholeTweet = storyActual.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews"
-
-        // Tweet Story
-        tweet(wholeTweet)
-    } else {
-        googl.shorten(storyActual.url)
-            .then(function (shortUrl) {
-                var wholeTweet = storyActual.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #VIM"
-
-                // Tweet Story
-                tweet(wholeTweet)
-            })
-        .catch(function (err) {
-            console.error("Story Link Error: " + err.message);
-            sendDMErrorMessage(error);
-        });
-    }
-}
-
-function tweet(tweetActual) {
-    client.post('statuses/update', {status: tweetActual},  function(error, tweet, response){
-        if (!error && response.statusCode === 200) {
-            console.log("Just Tweeted");
-        } else if (error) {
-            console.log(error);
-        }
-    });
 }
 
 function sendDMErrorMessage(errorActual) {
