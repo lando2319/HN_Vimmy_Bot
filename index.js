@@ -45,8 +45,7 @@ var q = async.queue(function (task, finalCallback) {
                 var storyActualJSON = JSON.parse(body);
 
                 // check title for stories with "vim" in the title
-                if (storyActualJSON.title.match(/Salakhutdinov/gi)) {
-                // if (storyActualJSON.title.match(/vim/gi)) {
+                if (storyActualJSON.title.match(/vim/gi)) {
                     // shorten HN Link
                     console.log("Found story on VIM: " + storyActualJSON.title);
                     console.log("Shortening HN Discussion Link");
@@ -61,7 +60,7 @@ var q = async.queue(function (task, finalCallback) {
                         finalCallback();
                     });
                 } else {
-                    console.log("no match for " + storyActualJSON.title)
+                    // console.log("no match for " + storyActualJSON.title)
                     finalCallback();
                 }
 
