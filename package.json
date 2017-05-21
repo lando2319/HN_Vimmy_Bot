@@ -12,6 +12,7 @@
     "async": "^2.0.0",
     "cron": "^1.0.9",
     "express": "^4.12.4",
+    "firebase-admin": "^5.0.0",
     "modulus": "^3.9.0",
     "request": "^2.55.0",
     "twitter": "^1.2.5"

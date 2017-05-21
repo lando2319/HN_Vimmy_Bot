@@ -3,3 +3,4 @@
 *.log
 hn_vimmy_bot_shell_script.sh
 config/*
+.DS_Store

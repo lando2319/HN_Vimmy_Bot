@@ -8,6 +8,7 @@ var Twitter = require("twitter")
 var googl = require('goo.gl');
 var async = require('async');
 var util = require('util');
+var admin = require("firebase-admin");
 
 var chatEmoji = '💬';
 var linkEmoji = '🔗';
@@ -25,9 +26,41 @@ var client = new Twitter({
     access_token_secret: process.env.twitter_access_token_secret
 });
 
+admin.initializeApp({
+    credential: admin.credential.cert("./config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
+    databaseURL: "https://hnbot-8bb67.firebaseio.com/"
+});
+
+var db = admin.database();
+var ref = db.ref("/bots");
+
+function grabDBSnapshot(callback) {
+    console.log("Taking DB Snapshot");
+    ref.on("value", function(snapshot) {
+        console.log("Successfully got DB Snapshot");
+        ref.off();
+        callback(snapshot.val());
+    }, function (errorObject) {
+        console.log("The read failed: " + errorObject.code);
+        slackbot.deliverTheNutReport(false);
+    });
+};
+
+function saveNewStory(botPWD, savePackage, saveCallback) {
+    console.log("Saving User Infomation To Database");
+    ref.child(botPWD).update(savePackage).then(function() {
+        console.log("Successfully Saved User Info to Database");
+        process.exit(1);
+        saveCallback();
+    }).catch(function(error) {
+        console.log("Firebase Error: " + error);
+        process.exit(1);
+        saveCallback();
+    });
+}
+
 // Async makes sure to keep callback straight
 var q = async.queue(function (task, finalCallback) {
-
     async.waterfall([
             function(mainCallback) {
                 request(task.url, function(err, res, body) {
@@ -45,8 +78,11 @@ var q = async.queue(function (task, finalCallback) {
             function(body, mainCallback) {
                 var storyActualJSON = JSON.parse(body);
 
+                console.log("Found story: " + storyActualJSON.title);
+
                 // check title for stories with "vim" in the title
-                if (storyActualJSON.title.match(/vim\b/gi)) {
+                // if (storyActualJSON.title.match(/vim\b/gi)) {
+                if (storyActualJSON.title.match(/Kotlin\b/gi)) {
                     // shorten HN Link
                     console.log("Found story on VIM: " + storyActualJSON.title);
                     console.log("Shortening HN Discussion Link");
@@ -89,40 +125,74 @@ var q = async.queue(function (task, finalCallback) {
             },
             function(outgoingTweet, mainCallback) {
                 console.error("Tweeting out Story");
-                client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
-                    if (!error && response.statusCode === 200) {
-                        console.log("Just Successfully Tweeted");
-                        finalCallback();
-                    } else if (error) {
-                        console.log(util.inspect("Tweet Error: " + error, false, null));
-                        finalCallback();
-                    } else {
-                        finalCallback();
-                    }
+                // client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
+                //     if (!error && response.statusCode === 200) {
+                //         console.log("Just Successfully Tweeted");
+                //         finalCallback();
+                //     } else if (error) {
+                //         console.log(util.inspect("Tweet Error: " + error, false, null));
+                        // finalCallback();
+                        mainCallback();
+                //     } else {
+                //         finalCallback();
+                //     }
+                // });
+            },
+            function(mainCallback) {
+                let savePackage = {};
+                savePackage[task.storyID] = {status:"sent"};
+                saveNewStory("hnvimmybot/", savePackage, function() {
+                    console.log("STOP");
+                    process.exit(1);
+                    finalCallback();
                 });
-            }
+            },
             ]);
 }, 1);
 
 // Grab top 500 stories
 function fetchTopStories() {
-    request({
-        url: "https://hacker-news.firebaseio.com/v0/topstories.json",
-    json: true
-    }, function (error, response, groupOfStories) {
-        serveLogActual();
-        if (!error && response.statusCode === 200) {
-            var numberOfStories = Object.keys(groupOfStories).length;
+    var postedStories = {};
 
-            for (i = 0; i < numberOfStories; i++) {
-                // fetch actual story to check it's title
-                q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + groupOfStories[i] + '.json' });
-            }    
-        } else {
-            console.log(util.inspect("Error on fetchTopStories: " + error, false, null));
-            // sendDMErrorMessage(error);
-        }
-    })
+    async.waterfall([
+            function(outsideCallback) {
+                grabDBSnapshot(function(snapshotOfDB) {
+                    postedStories["hnvimmybot"] = snapshotOfDB.hnvimmybot;
+                    outsideCallback();
+                });
+            },
+            function(outsideCallback) {
+                request({
+                    url: "https://hacker-news.firebaseio.com/v0/topstories.json",
+                    json: true
+                }, function (error, response, groupOfStories) {
+                    serveLogActual();
+                    if (!error && response.statusCode === 200) {
+
+                        console.log("before");
+                        console.log(postedStories);
+
+                        let arrayOfStoryIDs = Object.keys(postedStories.hnvimmybot);
+                        console.log(arrayOfStoryIDs)
+
+                        let cleanStoriesList = groupOfStories.filter(function(val) {
+                            let stringVal = val.toString();
+                            return arrayOfStoryIDs.indexOf(stringVal) == -1;
+                        });
+
+                        for (i = 0; i < cleanStoriesList.length; i++) {
+                            // fetch actual story to check it's title
+                            q.push({ url: 'https://hacker-news.firebaseio.com/v0/item/' + cleanStoriesList[i] + '.json', storyID: cleanStoriesList[i]
+                            });
+                        }    
+                        outsideCallback();
+                    } else {
+                        console.log(util.inspect("Error on fetchTopStories: " + error, false, null));
+                        // sendDMErrorMessage(error);
+                    }
+                })
+            },
+            ]);
 }
 
 // Log time
