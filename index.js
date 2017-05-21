@@ -125,18 +125,17 @@ var q = async.queue(function (task, finalCallback) {
             },
             function(outgoingTweet, mainCallback) {
                 console.error("Tweeting out Story");
-                // client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
-                //     if (!error && response.statusCode === 200) {
-                //         console.log("Just Successfully Tweeted");
-                //         finalCallback();
-                //     } else if (error) {
-                //         console.log(util.inspect("Tweet Error: " + error, false, null));
-                        // finalCallback();
+                client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
+                    if (!error && response.statusCode === 200) {
+                        console.log("Just Successfully Tweeted");
                         mainCallback();
-                //     } else {
-                //         finalCallback();
-                //     }
-                // });
+                    } else if (error) {
+                        console.log(util.inspect("Tweet Error: " + error, false, null));
+                        finalCallback();
+                    } else {
+                        finalCallback();
+                    }
+                });
             },
             function(mainCallback) {
                 let savePackage = {};
@@ -188,7 +187,6 @@ function fetchTopStories() {
                         outsideCallback();
                     } else {
                         console.log(util.inspect("Error on fetchTopStories: " + error, false, null));
-                        // sendDMErrorMessage(error);
                     }
                 })
             },
@@ -197,18 +195,8 @@ function fetchTopStories() {
 
 // Log time
 function serveLogActual() {
-    var currentDateActual = new Date()
+    let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
-}
-
-function sendDMErrorMessage(errorActual) {
-    client.post('direct_messages/new', {text: errorActual, screen_name:"mikepland"},  function(error, tweet, response){
-        if (!error && response.statusCode === 200) {
-            console.log("Just DMed an Error Message");
-        } else if (error) {
-            console.log(error);
-        }
-    });
 }
 
 // start script

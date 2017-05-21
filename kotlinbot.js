@@ -193,7 +193,6 @@ function fetchTopStories() {
 // Log time
 function serveLogActual() {
     let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
-
     console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
