@@ -29,21 +29,17 @@ var client = new Twitter({
     access_token_secret: process.env.twitter_access_token_secret
 });
 
-console.log("right before");
 admin.initializeApp({
     credential: admin.credential.cert("/home/pi/newDayPi/HN_Vimmy_Bot/config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
-//    credential: admin.credential.cert("./config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
+   // credential: admin.credential.cert("./config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
     databaseURL: "https://hnbot-8bb67.firebaseio.com/"
 });
-console.log("ok");
 
 var db = admin.database();
 var ref = db.ref("/bots");
 
 function grabDBSnapshot(callback) {
-    console.log("Taking DB Snapshot");
     ref.on("value", function(snapshot) {
-        console.log("Successfully got DB Snapshot");
         ref.off();
         callback(snapshot.val());
     }, function (errorObject) {
@@ -59,7 +55,6 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
         saveCallback();
     }).catch(function(error) {
         console.log("Firebase Error: " + error);
-        process.exit(1);
         saveCallback();
     });
 }
@@ -68,7 +63,7 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
 var q = async.queue(function (task, finalCallback) {
     async.waterfall([
             function(mainCallback) {
-                request(task.url, {timeout: 5000}, function(err, res, body) {
+                request(task.url, {timeout: 8000}, function(err, res, body) {
                     if (err) {
                         console.log(util.inspect("Error in fetchStory " + err, false, null));
                         finalCallback();
@@ -99,7 +94,7 @@ var q = async.queue(function (task, finalCallback) {
                         finalCallback();
                     });
                 } else {
-                    console.log("no match for " + storyActualJSON.title)
+                    // console.log("no match for " + storyActualJSON.title)
                     finalCallback();
                 }
             },
@@ -119,7 +114,6 @@ var q = async.queue(function (task, finalCallback) {
                         })
                     .catch(function (err) {
                         console.log(util.inspect("Story Link Error: " + err, false, null));
-                        // sendDMErrorMessage(error);
                         finalCallback();
                     });
                 }
@@ -142,8 +136,6 @@ var q = async.queue(function (task, finalCallback) {
                 let savePackage = {};
                 savePackage[task.storyID] = {status:"sent"};
                 saveNewStory("hnvimmybot/", savePackage, function() {
-                    console.log("STOP");
-                    process.exit(1);
                     finalCallback();
                 });
             },
@@ -171,12 +163,7 @@ function fetchTopStories() {
                     json: true
                 }, function (error, response, groupOfStories) {
                     if (!error && response.statusCode === 200) {
-
-                        console.log("before");
-                        console.log(postedStories);
-
                         let arrayOfStoryIDs = Object.keys(postedStories.hnvimmybot);
-                        console.log(arrayOfStoryIDs)
 
                         let cleanStoriesList = groupOfStories.filter(function(val) {
                             let stringVal = val.toString();
