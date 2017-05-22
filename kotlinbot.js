@@ -3,6 +3,9 @@
 // Every Hour Scans Hacker News For Stories on Vim and Tweets Them, see mikepland.com/hn_vimmy_bot
 // Script is being run with Crontab, ($ crontab -e)
 
+let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
+console.log("Running HN_Kotlin_Bot Scan: " + currentDateActual);
+
 var request = require("request")
 var Twitter = require("twitter")
 var googl = require('goo.gl');
@@ -27,7 +30,8 @@ var client = new Twitter({
 });
 
 admin.initializeApp({
-    credential: admin.credential.cert("./config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
+    credential: admin.credential.cert("/home/pi/newDayPi/HN_Vimmy_Bot/config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
+   // credential: admin.credential.cert("./config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
     databaseURL: "https://hnbot-8bb67.firebaseio.com/"
 });
 
@@ -35,9 +39,7 @@ var db = admin.database();
 var ref = db.ref("/bots");
 
 function grabDBSnapshot(callback) {
-    console.log("Taking DB Snapshot");
     ref.on("value", function(snapshot) {
-        console.log("Successfully got DB Snapshot");
         ref.off();
         callback(snapshot.val());
     }, function (errorObject) {
@@ -49,11 +51,10 @@ function grabDBSnapshot(callback) {
 function saveNewStory(botPWD, savePackage, saveCallback) {
     console.log("Saving User Infomation To Database");
     ref.child(botPWD).update(savePackage).then(function() {
-        console.log("Successfully Saved Story Info to Database");
+        console.log("Successfully Saved User Info to Database");
         saveCallback();
     }).catch(function(error) {
         console.log("Firebase Error: " + error);
-        process.exit(1);
         saveCallback();
     });
 }
@@ -62,7 +63,7 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
 var q = async.queue(function (task, finalCallback) {
     async.waterfall([
             function(mainCallback) {
-                request(task.url, function(err, res, body) {
+                request(task.url, {timeout: 8000}, function(err, res, body) {
                     if (err) {
                         console.log(util.inspect("Error in fetchStory " + err, false, null));
                         finalCallback();
@@ -77,12 +78,9 @@ var q = async.queue(function (task, finalCallback) {
             function(body, mainCallback) {
                 var storyActualJSON = JSON.parse(body);
 
-                console.log("Found story: " + storyActualJSON.title);
-
-                // check title for stories with "kotlin" in the title
-                if (storyActualJSON.title.match(/Kotlin\b/gi)) {
+                if (storyActualJSON.title.match(/kotlin\b/gi)) {
                     // shorten HN Link
-                    console.log("Found story on VIM: " + storyActualJSON.title);
+                    console.log("Found story on Kotlin: " + storyActualJSON.title);
                     console.log("Shortening HN Discussion Link");
                     googl.shorten('https://news.ycombinator.com/item?id=' + storyActualJSON.id)
                         .then(function (shortUrl) {
@@ -98,7 +96,6 @@ var q = async.queue(function (task, finalCallback) {
                     // console.log("no match for " + storyActualJSON.title)
                     finalCallback();
                 }
-
             },
             function(storyActualJSON, hnLink, mainCallback) {
                 console.log("Checking to see if story is \"ASK HN:\"");
@@ -111,12 +108,11 @@ var q = async.queue(function (task, finalCallback) {
                     googl.shorten(storyActualJSON.url)
                         .then(function (shortUrl) {
                             console.log("Successfully Shortened Story Link");
-                            var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #VIM";
+                            var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #Kotlin"; // add up to 132 max characters by my count, 80 max on HN
                             mainCallback(null, outgoingTweet)
                         })
                     .catch(function (err) {
                         console.log(util.inspect("Story Link Error: " + err, false, null));
-                        // sendDMErrorMessage(error);
                         finalCallback();
                     });
                 }
@@ -145,11 +141,14 @@ var q = async.queue(function (task, finalCallback) {
             ]);
 }, 1);
 
+q.drain = function() {
+    console.log("----------------------------------- SCAN COMPLETE -----------------------------------");
+    process.exit(1);
+};
+
 // Grab top 500 stories
 function fetchTopStories() {
     var postedStories = {};
-    serveLogActual();
-
     async.waterfall([
             function(outsideCallback) {
                 grabDBSnapshot(function(snapshotOfDB) {
@@ -163,12 +162,7 @@ function fetchTopStories() {
                     json: true
                 }, function (error, response, groupOfStories) {
                     if (!error && response.statusCode === 200) {
-
-                        console.log("before");
-                        console.log(postedStories);
-
                         let arrayOfStoryIDs = Object.keys(postedStories.hnkotlinbot);
-                        console.log(arrayOfStoryIDs)
 
                         let cleanStoriesList = groupOfStories.filter(function(val) {
                             let stringVal = val.toString();
@@ -187,12 +181,6 @@ function fetchTopStories() {
                 })
             },
             ]);
-}
-
-// Log time
-function serveLogActual() {
-    let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
-    console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
 // start script
