@@ -42,7 +42,7 @@ function grabDBSnapshot(callback) {
         callback(snapshot.val());
     }, function (errorObject) {
         console.log("The read failed: " + errorObject.code);
-        slackbot.deliverTheNutReport(false);
+        process.exit(1);
     });
 };
 
@@ -50,7 +50,6 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
     console.log("Saving User Infomation To Database");
     ref.child(botPWD).update(savePackage).then(function() {
         console.log("Successfully Saved Story Info to Database");
-        process.exit(1);
         saveCallback();
     }).catch(function(error) {
         console.log("Firebase Error: " + error);
@@ -149,6 +148,7 @@ var q = async.queue(function (task, finalCallback) {
 // Grab top 500 stories
 function fetchTopStories() {
     var postedStories = {};
+    serveLogActual();
 
     async.waterfall([
             function(outsideCallback) {
@@ -162,7 +162,6 @@ function fetchTopStories() {
                     url: "https://hacker-news.firebaseio.com/v0/topstories.json",
                     json: true
                 }, function (error, response, groupOfStories) {
-                    serveLogActual();
                     if (!error && response.statusCode === 200) {
 
                         console.log("before");

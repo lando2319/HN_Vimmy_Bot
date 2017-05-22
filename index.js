@@ -3,6 +3,9 @@
 // Every Hour Scans Hacker News For Stories on Vim and Tweets Them, see mikepland.com/hn_vimmy_bot
 // Script is being run with Crontab, ($ crontab -e)
 
+let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
+console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
+
 var request = require("request")
 var Twitter = require("twitter")
 var googl = require('goo.gl');
@@ -42,7 +45,7 @@ function grabDBSnapshot(callback) {
         callback(snapshot.val());
     }, function (errorObject) {
         console.log("The read failed: " + errorObject.code);
-        slackbot.deliverTheNutReport(false);
+        process.exit(1);
     });
 };
 
@@ -50,7 +53,6 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
     console.log("Saving User Infomation To Database");
     ref.child(botPWD).update(savePackage).then(function() {
         console.log("Successfully Saved User Info to Database");
-        process.exit(1);
         saveCallback();
     }).catch(function(error) {
         console.log("Firebase Error: " + error);
@@ -63,7 +65,7 @@ function saveNewStory(botPWD, savePackage, saveCallback) {
 var q = async.queue(function (task, finalCallback) {
     async.waterfall([
             function(mainCallback) {
-                request(task.url, function(err, res, body) {
+                request(task.url, {timeout: 5000}, function(err, res, body) {
                     if (err) {
                         console.log(util.inspect("Error in fetchStory " + err, false, null));
                         finalCallback();
@@ -78,11 +80,8 @@ var q = async.queue(function (task, finalCallback) {
             function(body, mainCallback) {
                 var storyActualJSON = JSON.parse(body);
 
-                console.log("Found story: " + storyActualJSON.title);
-
                 // check title for stories with "vim" in the title
-                // if (storyActualJSON.title.match(/vim\b/gi)) {
-                if (storyActualJSON.title.match(/Kotlin\b/gi)) {
+                if (storyActualJSON.title.match(/vim\b/gi)) {
                     // shorten HN Link
                     console.log("Found story on VIM: " + storyActualJSON.title);
                     console.log("Shortening HN Discussion Link");
@@ -97,10 +96,9 @@ var q = async.queue(function (task, finalCallback) {
                         finalCallback();
                     });
                 } else {
-                    // console.log("no match for " + storyActualJSON.title)
+                    console.log("no match for " + storyActualJSON.title)
                     finalCallback();
                 }
-
             },
             function(storyActualJSON, hnLink, mainCallback) {
                 console.log("Checking to see if story is \"ASK HN:\"");
@@ -149,10 +147,14 @@ var q = async.queue(function (task, finalCallback) {
             ]);
 }, 1);
 
+q.drain = function() {
+    console.log("----------------------------------- SCAN COMPLETE -----------------------------------");
+    process.exit(1);
+};
+
 // Grab top 500 stories
 function fetchTopStories() {
     var postedStories = {};
-
     async.waterfall([
             function(outsideCallback) {
                 grabDBSnapshot(function(snapshotOfDB) {
@@ -165,7 +167,6 @@ function fetchTopStories() {
                     url: "https://hacker-news.firebaseio.com/v0/topstories.json",
                     json: true
                 }, function (error, response, groupOfStories) {
-                    serveLogActual();
                     if (!error && response.statusCode === 200) {
 
                         console.log("before");
@@ -191,12 +192,6 @@ function fetchTopStories() {
                 })
             },
             ]);
-}
-
-// Log time
-function serveLogActual() {
-    let currentDateActual = new Date(new Date().getTime() + -(new Date().getTimezoneOffset()/60) * 3600 * 1000);
-    console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 }
 
 // start script
