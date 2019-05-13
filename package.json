@@ -14,6 +14,7 @@
     "express": "^4.12.4",
     "firebase-admin": "^5.0.0",
     "modulus": "^3.9.0",
+    "node-url-shortener": "^1.0.1",
     "request": "^2.55.0",
     "twitter": "^1.2.5"
   },

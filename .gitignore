@@ -2,6 +2,5 @@
 /*.swp
 *.log
 hn_vimmy_bot_shell_script.sh
-hn_kotlin_bot_shell_script.sh
 config/*
 .DS_Store

@@ -8,7 +8,6 @@ console.log("Running HN_Vimmy_Bot Scan: " + currentDateActual);
 
 var request = require("request")
 var Twitter = require("twitter")
-var googl = require('goo.gl');
 var async = require('async');
 var util = require('util');
 var admin = require("firebase-admin");
@@ -16,18 +15,34 @@ var admin = require("firebase-admin");
 var chatEmoji = '💬';
 var linkEmoji = '🔗';
 
-// Set a developer key (_required by Google_; see http://goo.gl/4DvFk for more info.)
-googl.setKey(process.env.hn_vimmy_bot_google_api_key);
+var shortUrl = require('node-url-shortener');
+ 
+var client;
+var searchTerm;
+var locationIs;
 
-// Get currently set developer key
-googl.getKey();
+if (new Date().getMinutes() < 30) {
+    console.log("Loading VIM Profile");
+    client = new Twitter({
+        consumer_key: process.env.twitter_consumer_key,
+        consumer_secret: process.env.twitter_consumer_secret,
+        access_token_key: process.env.twitter_access_token_key,
+        access_token_secret: process.env.twitter_access_token_secret
+    });
 
-var client = new Twitter({
-    consumer_key: process.env.twitter_consumer_key,
-    consumer_secret: process.env.twitter_consumer_secret,
-    access_token_key: process.env.twitter_access_token_key,
-    access_token_secret: process.env.twitter_access_token_secret
-});
+    searchTerm = "vim";
+    locationIs = "hnvimmybot";
+} else {
+    console.log("Loading Kotlin Profile");
+    client = new Twitter({
+        consumer_key: process.env.twitter_kotlin_consumer_key,
+        consumer_secret: process.env.twitter_kotlin_consumer_secret,
+        access_token_key: process.env.twitter_kotlin_access_token_key,
+        access_token_secret: process.env.twitter_kotlin_access_token_secret
+    });
+    searchTerm = "kotlin"
+    locationIs = "hnkotlinbot";
+}
 
 admin.initializeApp({
     credential: admin.credential.cert("/home/pi/newDayPi/HN_Vimmy_Bot/config/hnbot-8bb67-firebase-adminsdk-rszpo-c0cd32c24f.json"),
@@ -79,20 +94,21 @@ var q = async.queue(function (task, finalCallback) {
                 var storyActualJSON = JSON.parse(body);
 
                 // check title for stories with "vim" in the title
-                if (storyActualJSON.title.match(/vim\b/gi)) {
+                var re = new RegExp("\\b" + searchTerm + "\\b", "gi");
+                if (storyActualJSON.title.match(re)) {
                     // shorten HN Link
                     console.log("Found story on VIM: " + storyActualJSON.title);
-                    console.log("Shortening HN Discussion Link");
-                    googl.shorten('https://news.ycombinator.com/item?id=' + storyActualJSON.id)
-                        .then(function (shortUrl) {
+                    console.log("Shortening HN Discussion Link", storyActualJSON.id);
+                    shortUrl.short('https://news.ycombinator.com/item?id=' + storyActualJSON.id, function (err, url) {
                             // Shorten Story Link
+                        if (err) {
+                            console.log(util.inspect("Hacker News Link Error: " + err, false, null));
+                            finalCallback();
+                        } else {
                             console.log("Link Successfully Shortened");
-                            mainCallback(null, storyActualJSON, shortUrl);
-                        })
-                    .catch(function (err) {
-                        console.log(util.inspect("Hacker News Link Error: " + err, false, null));
-                        finalCallback();
-                    });
+                            mainCallback(null, storyActualJSON, url);
+                        }
+                    })
                 } else {
                     // console.log("no match for " + storyActualJSON.title)
                     finalCallback();
@@ -106,20 +122,20 @@ var q = async.queue(function (task, finalCallback) {
                     mainCallback(null, outgoingTweet);
                 } else {
                     console.log("Shortening Story Link");
-                    googl.shorten(storyActualJSON.url)
-                        .then(function (shortUrl) {
+                    shortUrl.short(storyActualJSON.url, function (err, url) {
+                        if (err) {
+                            console.log(util.inspect("Story Link Error: " + err, false, null));
+                            finalCallback();
+                        } else {
                             console.log("Successfully Shortened Story Link");
-                            var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + shortUrl + "\n#HackerNews #VIM";
+                            var outgoingTweet = storyActualJSON.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + url + "\n#HackerNews #VIM";
                             mainCallback(null, outgoingTweet)
-                        })
-                    .catch(function (err) {
-                        console.log(util.inspect("Story Link Error: " + err, false, null));
-                        finalCallback();
-                    });
+                        }
+                    })
                 }
             },
             function(outgoingTweet, mainCallback) {
-                console.error("Tweeting out Story");
+                console.log("Tweeting out Story");
                 client.post('statuses/update', {status: outgoingTweet},  function(error, tweet, response){
                     if (!error && response.statusCode === 200) {
                         console.log("Just Successfully Tweeted");
@@ -135,12 +151,12 @@ var q = async.queue(function (task, finalCallback) {
             function(mainCallback) {
                 let savePackage = {};
                 savePackage[task.storyID] = {status:"sent"};
-                saveNewStory("hnvimmybot/", savePackage, function() {
+                saveNewStory(locationIs + "/", savePackage, function() {
                     finalCallback();
                 });
             },
             ]);
-}, 1);
+}, 10);
 
 q.drain = function() {
     console.log("----------------------------------- SCAN COMPLETE -----------------------------------");
@@ -153,7 +169,7 @@ function fetchTopStories() {
     async.waterfall([
             function(outsideCallback) {
                 grabDBSnapshot(function(snapshotOfDB) {
-                    postedStories["hnvimmybot"] = snapshotOfDB.hnvimmybot;
+                    postedStories[locationIs] = snapshotOfDB[locationIs]
                     outsideCallback();
                 });
             },
@@ -163,7 +179,7 @@ function fetchTopStories() {
                     json: true
                 }, function (error, response, groupOfStories) {
                     if (!error && response.statusCode === 200) {
-                        let arrayOfStoryIDs = Object.keys(postedStories.hnvimmybot);
+                        let arrayOfStoryIDs = Object.keys(postedStories[locationIs]);
 
                         let cleanStoriesList = groupOfStories.filter(function(val) {
                             let stringVal = val.toString();
