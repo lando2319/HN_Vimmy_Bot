@@ -1,25 +1,18 @@
 {
-  "name": "hackerNewsVIMBot",
-  "version": "2.0.0-0",
+  "name": "hn_vimmy_bot",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.0.0",
-    "cron": "^1.0.9",
-    "express": "^4.12.4",
-    "firebase-admin": "^5.0.0",
-    "modulus": "^3.9.0",
-    "node-url-shortener": "^1.0.1",
-    "request": "^2.55.0",
-    "twitter": "^1.2.5"
-  },
-  "subdomain": "undefined-hackerNewsVIMBot",
-  "engines": {
-    "node": "0.10.x"
+    "async": "^3.2.4",
+    "dotenv": "^16.0.3",
+    "firebase-admin": "^11.8.0",
+    "node-url-shortener": "^2.0.3",
+    "twitter-api-v2": "^1.14.2"
   }
 }

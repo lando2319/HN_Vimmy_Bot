@@ -3,4 +3,7 @@
 *.log
 hn_vimmy_bot_shell_script.sh
 config/*
+!config/.gitkeep
 .DS_Store
+.env
+tester.js
