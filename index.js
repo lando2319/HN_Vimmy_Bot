@@ -34,19 +34,10 @@ var queue = async.queue(function(storyID, callback) {
             const response = await fetch('https://hacker-news.firebaseio.com/v0/item/' + storyID + '.json');
             const story = await response.json();
 
-            // var re = new RegExp("\\b" + searchTerm + "\\b", "gi");
-
-
-            // TESTING
-            var re = new RegExp("\\b" + "ChatGPT" + "\\b", "gi");
-
-
-
-
+            var re = new RegExp("\\b" + searchTerm + "\\b", "gi");
             if (story.title.match(re)) {
                 console.log("Found story on VIM: " + story.title);
                 console.log("Shortening HN Discussion Link", story.id);
-                process.exit(0);
             } else {
                 return callback();
             }
@@ -58,32 +49,35 @@ var queue = async.queue(function(storyID, callback) {
                 return callback();
             }
 
+            console.log("Shortening HN Link");
             var shortHNLink = await shortenURL('https://news.ycombinator.com/item?id=' + storyID);
+            console.log("Successfully Shortened HN Link as", shortHNLink);
 
             var shortStoryURL = ""
 
             if (!story.url) {
+                console.log("ASK HN Detected");
                 outgoingTweet = story.title + "\n" + chatEmoji + ": " + shortHNLink + "\n#HackerNews #VIM";
             } else {
+                console.log("Shortening Story Link");
                 shortStoryURL = await shortenURL(story.url);
                 outgoingTweet = story.title + "\n" + chatEmoji + " " + shortHNLink + "\n" + linkEmoji + " " + shortStoryURL + "\n#HackerNews #" + searchTerm.toUpperCase();
+                console.log("Successfully Shortened HN Link as", shortStoryURL);
             }
 
             console.log("Tweeting:\n\n", outgoingTweet);
-            var tweetID = await client.v2.tweet(outgoingTweet, {});
-            console.log("Successfully Tweeted", tweetID);
+            var tweetResponse = await client.v2.tweet(outgoingTweet, {});
+            console.log("Successfully Tweeted", tweetResponse.data.id);
 
             console.log("Setting Record to firestore");
             await db.collection(searchTerm).doc(storyID).set({
                 dateTweeted:new Date(),
-                tweetID:tweetID,
+                tweetID:tweetResponse.data.id,
                 urlLink:shortStoryURL,
                 shortHNLink:shortHNLink,
                 tweetMessage:outgoingTweet
             });
             console.log("Successfully Saved Record To DB, Ending Process");
-
-            process.exit(0);
             callback();
         } catch(err) {
             console.log("ERROR in Queue", err);

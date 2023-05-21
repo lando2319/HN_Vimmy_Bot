@@ -16,3 +16,19 @@ Can you improve me? Send me a pull request.
 
 - HN Vimmy Bot 
 
+
+========
+
+If you want to run your own, hn <whatever> bot
+
+clone the repo
+
+add your .env see .envEXAMPLE as an example
+
+run `node index <searchTerm>`
+
+your twitter keys in your .env would need to match your search term
+
+and or course you would need your twitter creds with proper permissions
+
+you'd also need a service file for firestore
