@@ -20,6 +20,17 @@ var client = new TwitterApi({
     accessSecret: process.env[searchTerm + "TwitterAccessSecret"]
 });
 
+var date = new Date();
+var prettyDate = date.toLocaleDateString('en-US', {
+    year: "numeric",
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+});
+
+console.log("========================\n\nStarting HN Bot Process for", searchTerm, prettyDate, "\n");
+
 initializeApp({
     credential: cert(serviceAccount)
 });
@@ -36,7 +47,7 @@ var queue = async.queue(function(storyID, callback) {
 
             var re = new RegExp("\\b" + searchTerm + "\\b", "gi");
             if (story.title.match(re)) {
-                console.log("Found story on VIM: " + story.title);
+                console.log("Found story on ", searchTerm, story.title);
                 console.log("Shortening HN Discussion Link", story.id);
             } else {
                 return callback();
@@ -57,7 +68,7 @@ var queue = async.queue(function(storyID, callback) {
 
             if (!story.url) {
                 console.log("ASK HN Detected");
-                outgoingTweet = story.title + "\n" + chatEmoji + ": " + shortHNLink + "\n#HackerNews #VIM";
+                outgoingTweet = story.title + "\n" + chatEmoji + ": " + shortHNLink + "\n#HackerNews #" + searchTerm.toUpperCase();
             } else {
                 console.log("Shortening Story Link");
                 shortStoryURL = await shortenURL(story.url);
@@ -87,7 +98,7 @@ var queue = async.queue(function(storyID, callback) {
 }, 1);
 
 queue.drain(function () {
-    console.log("HNVimmy Bot Process Complete");
+    console.log("HN Bot for", searchTerm, "Process Complete");
     process.exit(0);
 });
 
