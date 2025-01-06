@@ -62,6 +62,9 @@ var queue = async.queue(function(storyID, callback) {
 
             console.log("Shortening HN Link");
             var shortHNLink = await shortenURL('https://news.ycombinator.com/item?id=' + storyID);
+
+            shortHNLink = shortHNLink.shortened_url;
+
             console.log("Successfully Shortened HN Link as", shortHNLink);
 
             var shortStoryURL = ""
