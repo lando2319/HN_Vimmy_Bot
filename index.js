@@ -60,23 +60,13 @@ var queue = async.queue(function(storyID, callback) {
                 return callback();
             }
 
-            console.log("Shortening HN Link");
-            var shortHNLink = await shortenURL('https://news.ycombinator.com/item?id=' + storyID);
-
-            shortHNLink = shortHNLink.shortened_url;
-
-            console.log("Successfully Shortened HN Link as", shortHNLink);
-
-            var shortStoryURL = ""
+            var hnLink = 'https://news.ycombinator.com/item?id=' + storyID;
 
             if (!story.url) {
                 console.log("ASK HN Detected");
-                outgoingTweet = story.title + "\n" + chatEmoji + ": " + shortHNLink + "\n#HackerNews #" + searchTerm.toUpperCase();
+                outgoingTweet = story.title + "\n" + chatEmoji + ": " + hnLink + "\n#HackerNews #" + searchTerm.toUpperCase();
             } else {
-                console.log("Shortening Story Link");
-                shortStoryURL = await shortenURL(story.url);
-                outgoingTweet = story.title + "\n" + chatEmoji + " " + shortHNLink + "\n" + linkEmoji + " " + shortStoryURL + "\n#HackerNews #" + searchTerm.toUpperCase();
-                console.log("Successfully Shortened HN Link as", shortStoryURL);
+                outgoingTweet = story.title + "\n" + chatEmoji + " " + hnLink + "\n" + linkEmoji + " " + story.url + "\n#HackerNews #" + searchTerm.toUpperCase();
             }
 
             console.log("Tweeting:\n\n", outgoingTweet);
@@ -87,8 +77,8 @@ var queue = async.queue(function(storyID, callback) {
             await db.collection(searchTerm).doc(storyID).set({
                 dateTweeted:new Date(),
                 tweetID:tweetResponse.data.id,
-                urlLink:shortStoryURL,
-                shortHNLink:shortHNLink,
+                urlLink:story.url,
+                shortHNLink:hnLink,
                 tweetMessage:outgoingTweet
             });
             console.log("Successfully Saved Record To DB, Ending Process");
